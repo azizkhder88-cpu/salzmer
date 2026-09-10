@@ -1,9 +1,7 @@
 package com.example
 
-import java.time.LocalDate
-import java.time.Period
-import java.time.temporal.ChronoUnit
-import kotlin.math.abs
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 /**
  * Period model representing a single tenure/service segment entered manually.
@@ -138,6 +136,7 @@ object ServiceCalculatorHelper {
 
     /**
      * Calculates tenure between two dates (Start Date and End Date).
+     * Uses Calendar for 100% Android compatibility without API level restrictions.
      */
     fun calculateBetweenDates(
         startYear: Int, startMonth: Int, startDay: Int,
@@ -145,19 +144,45 @@ object ServiceCalculatorHelper {
         isDoubleService: Boolean = false
     ): CalculationResult {
         return try {
-            val startDate = LocalDate.of(startYear, startMonth.coerceIn(1, 12), startDay.coerceIn(1, 31))
-            val endDate = LocalDate.of(endYear, endMonth.coerceIn(1, 12), endDay.coerceIn(1, 31))
+            val startCal = Calendar.getInstance().apply {
+                set(Calendar.YEAR, startYear)
+                set(Calendar.MONTH, (startMonth - 1).coerceIn(0, 11))
+                set(Calendar.DAY_OF_MONTH, startDay.coerceIn(1, 31))
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
 
-            val (early, late) = if (startDate.isAfter(endDate)) Pair(endDate, startDate) else Pair(startDate, endDate)
-            val period = Period.between(early, late)
-            val totalDaysBetween = ChronoUnit.DAYS.between(early, late)
+            val endCal = Calendar.getInstance().apply {
+                set(Calendar.YEAR, endYear)
+                set(Calendar.MONTH, (endMonth - 1).coerceIn(0, 11))
+                set(Calendar.DAY_OF_MONTH, endDay.coerceIn(1, 31))
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
 
-            var y = period.years
-            var m = period.months
-            var d = period.days
+            val (early, late) = if (startCal.after(endCal)) Pair(endCal, startCal) else Pair(startCal, endCal)
+            val diffMillis = late.timeInMillis - early.timeInMillis
+            val totalDaysBetween = TimeUnit.MILLISECONDS.toDays(diffMillis)
+
+            var y = late.get(Calendar.YEAR) - early.get(Calendar.YEAR)
+            var m = late.get(Calendar.MONTH) - early.get(Calendar.MONTH)
+            var d = late.get(Calendar.DAY_OF_MONTH) - early.get(Calendar.DAY_OF_MONTH)
+
+            if (d < 0) {
+                m -= 1
+                d += 30
+            }
+            if (m < 0) {
+                y -= 1
+                m += 12
+            }
+            if (y < 0) y = 0
 
             if (isDoubleService) {
-                // Double calculation
                 var doubleDays = (y * 360L + m * 30L + d) * 2
                 y = (doubleDays / 360L).toInt()
                 val rem = doubleDays % 360L
@@ -166,7 +191,7 @@ object ServiceCalculatorHelper {
             }
 
             val totalMonths = (y * 12) + m
-            val decYears = y + (m / 12.0) + (d / 365.25)
+            val decYears = y + (m / 12.0) + (d / 360.0)
 
             CalculationResult(
                 years = y,

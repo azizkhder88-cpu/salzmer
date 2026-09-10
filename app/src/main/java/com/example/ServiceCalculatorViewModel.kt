@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.time.LocalDate
+import java.util.Calendar
 
 data class CalculatorUiState(
     val selectedTab: Int = 0, // 0 = Manual Input, 1 = Date Range, 2 = Retirement/Promotion
@@ -21,9 +21,9 @@ data class CalculatorUiState(
     val startYear: String = "2015",
     val startMonth: String = "1",
     val startDay: String = "1",
-    val endYear: String = LocalDate.now().year.toString(),
-    val endMonth: String = LocalDate.now().monthValue.toString(),
-    val endDay: String = LocalDate.now().dayOfMonth.toString(),
+    val endYear: String = Calendar.getInstance().get(Calendar.YEAR).toString(),
+    val endMonth: String = (Calendar.getInstance().get(Calendar.MONTH) + 1).toString(),
+    val endDay: String = Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString(),
     val isDateRangeDouble: Boolean = false,
     val dateRangeResult: CalculationResult = CalculationResult(),
 
@@ -183,12 +183,12 @@ class ServiceCalculatorViewModel : ViewModel() {
     }
 
     fun setEndDateToToday() {
-        val now = LocalDate.now()
+        val now = Calendar.getInstance()
         _uiState.update {
             it.copy(
-                endYear = now.year.toString(),
-                endMonth = now.monthValue.toString(),
-                endDay = now.dayOfMonth.toString()
+                endYear = now.get(Calendar.YEAR).toString(),
+                endMonth = (now.get(Calendar.MONTH) + 1).toString(),
+                endDay = now.get(Calendar.DAY_OF_MONTH).toString()
             )
         }
         recalculateDateRange()
@@ -200,13 +200,14 @@ class ServiceCalculatorViewModel : ViewModel() {
     }
 
     private fun recalculateDateRange() {
+        val now = Calendar.getInstance()
         val sY = ServiceCalculatorHelper.cleanDigits(_uiState.value.startYear).toIntOrNull() ?: 2015
         val sM = ServiceCalculatorHelper.cleanDigits(_uiState.value.startMonth).toIntOrNull() ?: 1
         val sD = ServiceCalculatorHelper.cleanDigits(_uiState.value.startDay).toIntOrNull() ?: 1
 
-        val eY = ServiceCalculatorHelper.cleanDigits(_uiState.value.endYear).toIntOrNull() ?: LocalDate.now().year
-        val eM = ServiceCalculatorHelper.cleanDigits(_uiState.value.endMonth).toIntOrNull() ?: LocalDate.now().monthValue
-        val eD = ServiceCalculatorHelper.cleanDigits(_uiState.value.endDay).toIntOrNull() ?: LocalDate.now().dayOfMonth
+        val eY = ServiceCalculatorHelper.cleanDigits(_uiState.value.endYear).toIntOrNull() ?: now.get(Calendar.YEAR)
+        val eM = ServiceCalculatorHelper.cleanDigits(_uiState.value.endMonth).toIntOrNull() ?: (now.get(Calendar.MONTH) + 1)
+        val eD = ServiceCalculatorHelper.cleanDigits(_uiState.value.endDay).toIntOrNull() ?: now.get(Calendar.DAY_OF_MONTH)
 
         val result = ServiceCalculatorHelper.calculateBetweenDates(
             startYear = sY, startMonth = sM, startDay = sD,
