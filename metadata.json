@@ -1,0 +1,6 @@
+{
+  "name": "لیوای 1 نەوت",
+  "description": "هەژمارکردنی ساڵ و مانگی خزمەت بە شێوازی دەستی بۆ لیوای 1 نەوت",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
